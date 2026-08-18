@@ -67,6 +67,17 @@ gradlew.bat assembleRelease    # Release 版本（需配置 keystore.properties�
 - Android 7.0+ (API 24)
 - 网络连接
 
+## 免责声明
+
+本工具**仅用于学习和研究目的**。使用前请阅读完整的 [DISCLAIMER.md](DISCLAIMER.md)。
+
+- 用户应自行承担使用本软件的一切法律责任
+- 仅可下载自己拥有合法权利的内容
+- 不得用于商业用途或侵犯他人权益
+- 请遵守当地法律法规及抖音平台服务条款
+
+**不同意上述条款者请立即停止使用并删除本软件。**
+
 ## License
 
 MIT

@@ -12,4 +12,8 @@
     <string name="select_none">全不选</string>
     <string name="btn_clear">清空</string>
     <string name="btn_copy">粘贴链接</string>
+    <string name="about">关于</string>
+    <string name="disclaimer_title">免责声明</string>
+    <string name="disclaimer_content">本软件仅用于学习和研究目的。\n\n用户应自行承担使用本软件下载内容的一切法律责任。仅可下载自己拥有合法权利或已获得明确授权的内容，不得用于商业用途或侵犯他人权益。\n\n所有下载内容的版权归原作者或权利方所有。\n\n使用本软件即表示您已理解并同意上述条款。不同意者请立即停止使用并删除本软件。</string>
+    <string name="disclaimer_agree">我知道了</string>
 </resources>

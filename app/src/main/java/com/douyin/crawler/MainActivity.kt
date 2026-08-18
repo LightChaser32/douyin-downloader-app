@@ -419,15 +419,24 @@ class MainActivity : Activity() {
     private fun showSettings() {
         AlertDialog.Builder(this)
             .setTitle("设置")
-            .setItems(arrayOf("打开登录页", "清除登录态")) { _, which ->
+            .setItems(arrayOf("打开登录页", "清除登录态", getString(R.string.about))) { _, which ->
                 when (which) {
                     0 -> openLoginPage()
                     1 -> {
                         CookieStore.clear()
                         Toast.makeText(this, "登录态已清除", Toast.LENGTH_SHORT).show()
                     }
+                    2 -> showDisclaimer()
                 }
             }
+            .show()
+    }
+
+    private fun showDisclaimer() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.disclaimer_title)
+            .setMessage(R.string.disclaimer_content)
+            .setPositiveButton(R.string.disclaimer_agree, null)
             .show()
     }
 
