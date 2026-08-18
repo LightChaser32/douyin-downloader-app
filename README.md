@@ -56,6 +56,10 @@ gradlew.bat assembleRelease    # Release 版本（需配置 keystore.properties�
 3. 在 WebView 中完成登录
 4. 登录成功后按返回键
 
+## 技术参考
+
+- [douyin-downloader](https://github.com/jiji262/douyin-downloader.git)
+
 ## 技术栈
 
 - 原生 Android (Kotlin)
