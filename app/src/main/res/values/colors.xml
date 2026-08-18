@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#FE2C55</color>
+    <color name="primary_dark">#D9244A</color>
+    <color name="bg">#FFFFFF</color>
+    <color name="card">#F7F7F9</color>
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#8A8A8E</color>
+    <color name="divider">#EEEEEE</color>
+    <color name="success">#2EA043</color>
+    <color name="progress_bg">#E9E9EB</color>
+</resources>

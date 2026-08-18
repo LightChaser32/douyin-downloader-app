@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">抖音资源下载器</string>
+    <string name="input_hint">粘贴抖音分享链接，例如 v.douyin.com/xxxxx</string>
+    <string name="btn_parse">解析</string>
+    <string name="parsing">解析中…</string>
+    <string name="download_video">下载视频</string>
+    <string name="download_images">保存图集</string>
+    <string name="no_result">未解析到内容，请确认链接有效且可公开访问</string>
+    <string name="need_login">部分内容需要登录，正在打开登录页…</string>
+    <string name="select_all">全选</string>
+    <string name="select_none">全不选</string>
+    <string name="btn_clear">清空</string>
+    <string name="btn_copy">粘贴链接</string>
+</resources>
