@@ -14,6 +14,12 @@
 - **解析进度显示**：实时显示合集解析进度条和已获取集数
 - **设置页面**：登录管理、合集解析开关
 
+## 界面预览
+
+| 主界面 | 合集解析 |
+|--------|----------|
+| ![主界面](https://github.com/LightChaser32/douyin-downloader-app/releases/download/v1.0.1/_20260819132250_24_1.jpg) | ![合集解析](https://github.com/LightChaser32/douyin-downloader-app/releases/download/v1.0.1/_20260819132250_25_1.jpg) |
+
 ## 安装
 
 1. 下载 [Release APK](https://github.com/LightChaser32/douyin-downloader-app/releases/latest)
