@@ -12,4 +12,26 @@
     <string name="select_none">全不选</string>
     <string name="btn_clear">清空</string>
     <string name="btn_copy">粘贴链接</string>
+
+    <!-- 合集相关 -->
+    <string name="mix_info">合集信息</string>
+    <string name="mix_episodes">共 %d 集</string>
+    <string name="mix_download_all">下载全集</string>
+    <string name="mix_download_selected">下载选中</string>
+    <string name="mix_expand_list">展开列表</string>
+    <string name="mix_collapse_list">收起列表</string>
+    <string name="mix_parse_enabled">合集解析：开</string>
+    <string name="mix_parse_disabled">合集解析：关</string>
+    <string name="mix_episode_format">第 %d 集</string>
+    <string name="mix_loading">加载合集中…</string>
+    <string name="mix_load_error">合集加载失败</string>
+    <string name="mix_parsing">正在解析合集…</string>
+    <string name="mix_parsing_progress">正在解析合集：已获取 %1$d / %2$d 集</string>
+    <string name="mix_parsing_unknown">正在解析合集：已获取 %1$d 集</string>
+    <string name="mix_not_found">该视频不属于任何合集</string>
+    <string name="mix_batch_progress">下载进度：%1$d / %2$d</string>
+    <string name="mix_batch_complete">批量下载完成：%1$d 成功，%2$d 失败</string>
+    <string name="mix_prev_page">上一页</string>
+    <string name="mix_next_page">下一页</string>
+    <string name="mix_page_info">第 %1$d / %2$d 页</string>
 </resources>

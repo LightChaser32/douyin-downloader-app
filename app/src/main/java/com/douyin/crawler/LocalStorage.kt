@@ -10,6 +10,7 @@ import java.io.File
 class LocalStorage(context: Context) : SQLiteOpenHelper(context, "douyin.db", null, 1) {
 
     private val appContext: Context = context.applicationContext
+    private val prefs = context.getSharedPreferences("douyin_settings", Context.MODE_PRIVATE)
 
     data class Record(
         val awemeId: String,
@@ -34,6 +35,15 @@ class LocalStorage(context: Context) : SQLiteOpenHelper(context, "douyin.db", nu
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {}
+
+    // 合集解析开关
+    fun isMixParseEnabled(): Boolean {
+        return prefs.getBoolean("enable_mix_parse", true)
+    }
+
+    fun setMixParseEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("enable_mix_parse", enabled).apply()
+    }
 
     fun rootDir(): File {
         val dir = File(appContext.getExternalFilesDir(null), "Douyin")

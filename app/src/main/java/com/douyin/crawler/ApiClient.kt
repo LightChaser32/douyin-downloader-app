@@ -27,7 +27,7 @@ class ApiClient(
         private val UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
 
-        private val AID_VIDEO = arrayOf("1128", "6383")
+        private val AID_VIDEO = arrayOf("6383", "1128")
         private val AID_NOTE = arrayOf("6383", "1128")
 
         fun extractIdFromUrl(url: String): String? {
@@ -306,6 +306,33 @@ class ApiClient(
         val author = aweme.optJSONObject("author") ?: JSONObject()
         val stats = aweme.optJSONObject("statistics") ?: JSONObject()
 
+        // 检查合集信息 - 可能存在于顶层或 mix_info 子对象中
+        val mixId = aweme.optString("mix_id", "").takeIf { it.isNotEmpty() }
+            ?: aweme.optJSONObject("mix_info")?.optString("mix_id", "")
+        val mixInfoObj = aweme.optJSONObject("mix_info")
+
+        // 检查 series_info 字段（新版 API 可能使用此字段）
+        val seriesInfo = aweme.optJSONObject("series_info")
+        val seriesBasicInfo = aweme.optJSONObject("series_basic_info")
+        val chapterList = aweme.optJSONArray("chapter_list")
+
+        Log.d(TAG, "parseDetail: mix_id(top)=${aweme.optString("mix_id", "null")}, mix_info=${mixInfoObj?.toString()?.take(200) ?: "null"}")
+
+        // 尝试从 series_info 或 series_basic_info 提取合集信息
+        val finalMixId = mixId
+            ?: seriesBasicInfo?.optString("series_id", "")?.takeIf { it.isNotEmpty() }
+            ?: seriesInfo?.optString("series_id", "")?.takeIf { it.isNotEmpty() }
+
+        // 合集名称：mix_info.mix_name 优先，series_info.series_name 兜底（短剧）
+        val mixName = mixInfoObj?.optString("mix_name", "")
+            ?.takeIf { it.isNotEmpty() }
+            ?: seriesInfo?.optString("series_name", "")
+                ?.removePrefix("短剧 · ")
+                ?.takeIf { it.isNotEmpty() }
+            ?: ""
+
+        val mixStats = mixInfoObj?.optJSONObject("statis") ?: seriesInfo?.optJSONObject("stats")
+
         return JSONObject().apply {
             put("ok", true)
             put("url", "")
@@ -319,6 +346,182 @@ class ApiClient(
             put("digg", stats.optLong("digg_count", 0))
             put("comment", stats.optLong("comment_count", 0))
             put("share", stats.optLong("share_count", 0))
+
+            // 合集信息
+            if (!finalMixId.isNullOrEmpty()) {
+                put("mixId", finalMixId)
+                put("mixName", mixName)
+                put("totalEpisode", mixStats?.optInt("total_episode", 0) ?: 0)
+                put("currentEpisode", mixStats?.optInt("current_episode", 0) ?: 0)
+            }
         }.toString()
+    }
+
+    /**
+     * 提取视频详情中的合集 ID
+     */
+    fun extractMixId(awemeJson: String): String? {
+        return try {
+            val root = JSONObject(awemeJson)
+            val mixId = root.optString("mixId", "")
+            mixId.takeIf { it.isNotEmpty() }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 获取合集详情
+     */
+    fun fetchMixDetail(mixId: String): MixInfo? {
+        val cookie = CookieStore.cookieString()
+        if (cookie.isEmpty()) {
+            Log.d(TAG, "no cookie for mix detail")
+            return null
+        }
+
+        val params = buildMixParams(mixId)
+        val query = params.entries.joinToString("&") { (k, v) ->
+            "$k=${URLEncoder.encode(v, "UTF-8")}"
+        }
+        val aBogus = generateABogus(query) ?: return null
+        val signed = "$query&a_bogus=${URLEncoder.encode(aBogus, "UTF-8")}"
+        val url = "https://www.douyin.com/aweme/v1/web/mix/detail/?$signed"
+
+        // mix/detail 常被风控 403，只试 1 次，失败即返回 null（信息可由 detail 解析兜底）
+        val body = requestWithRetry(url, cookie, "https://www.douyin.com/", 1) ?: return null
+        return AwemeParser.parseMixInfo(body)
+    }
+
+    /**
+     * 分页获取合集内视频列表
+     */
+    fun fetchMixAwemeList(mixId: String, cursor: Long = 0): Triple<List<MixEpisode>, Long, Boolean> {
+        val cookie = CookieStore.cookieString()
+        if (cookie.isEmpty()) {
+            Log.d(TAG, "no cookie for mix aweme list")
+            return Triple(emptyList(), 0, false)
+        }
+
+        val params = buildMixAwemeParams(mixId, cursor)
+        val query = params.entries.joinToString("&") { (k, v) ->
+            "$k=${URLEncoder.encode(v, "UTF-8")}"
+        }
+        val aBogus = generateABogus(query)
+        if (aBogus == null) {
+            Log.d(TAG, "mix aweme abogus null")
+            return Triple(emptyList(), 0, false)
+        }
+        val signed = "$query&a_bogus=${URLEncoder.encode(aBogus, "UTF-8")}"
+        val url = "https://www.douyin.com/aweme/v1/web/mix/aweme/?$signed"
+
+        val body = requestWithRetry(url, cookie, "https://www.douyin.com/", 3)
+        if (body == null) {
+            Log.d(TAG, "mix aweme body null")
+            return Triple(emptyList(), 0, false)
+        }
+        return AwemeParser.parseMixAwemeList(body)
+    }
+
+    /**
+     * 分页获取合集内所有视频。
+     * onProgress 可选回调：已拉取的集数 / 单页返回的条数。
+     */
+    fun fetchAllMixAwemeList(mixId: String, onProgress: ((Int) -> Unit)? = null): List<MixEpisode> {
+        val allEpisodes = mutableListOf<MixEpisode>()
+        var cursor = 0L
+        var hasMore = true
+
+        while (hasMore) {
+            val (episodes, nextCursor, more) = fetchMixAwemeList(mixId, cursor)
+            allEpisodes.addAll(episodes)
+            hasMore = more && episodes.isNotEmpty() && nextCursor > cursor
+            cursor = nextCursor
+
+            onProgress?.invoke(allEpisodes.size)
+
+            // 避免请求过快触发风控
+            if (hasMore) {
+                Thread.sleep(500)
+            }
+        }
+
+        return allEpisodes
+    }
+
+    private fun buildMixParams(mixId: String): LinkedHashMap<String, String> {
+        val msToken = extractCookie("msToken")
+        val p = LinkedHashMap<String, String>()
+        p["device_platform"] = "webapp"
+        p["aid"] = "6383"
+        p["channel"] = "channel_pc_web"
+        p["update_version_code"] = "170400"
+        p["pc_client_type"] = "1"
+        p["pc_libra_divert"] = "Windows"
+        p["version_code"] = "290100"
+        p["version_name"] = "29.1.0"
+        p["cookie_enabled"] = "true"
+        p["screen_width"] = "1536"
+        p["screen_height"] = "864"
+        p["browser_language"] = "zh-CN"
+        p["browser_platform"] = "Win32"
+        p["browser_name"] = "Chrome"
+        p["browser_version"] = "139.0.0.0"
+        p["browser_online"] = "true"
+        p["engine_name"] = "Blink"
+        p["engine_version"] = "139.0.0.0"
+        p["os_name"] = "Windows"
+        p["os_version"] = "10"
+        p["cpu_core_num"] = "16"
+        p["device_memory"] = "8"
+        p["platform"] = "PC"
+        p["downlink"] = "10"
+        p["effective_type"] = "4g"
+        p["round_trip_time"] = "200"
+        p["support_h265"] = "1"
+        p["support_dash"] = "1"
+        p["uifid"] = ""
+        if (msToken.isNotEmpty()) p["msToken"] = msToken
+        p["mix_id"] = mixId
+        return p
+    }
+
+    private fun buildMixAwemeParams(mixId: String, cursor: Long): LinkedHashMap<String, String> {
+        val msToken = extractCookie("msToken")
+        val p = LinkedHashMap<String, String>()
+        p["device_platform"] = "webapp"
+        p["aid"] = "6383"
+        p["channel"] = "channel_pc_web"
+        p["update_version_code"] = "170400"
+        p["pc_client_type"] = "1"
+        p["pc_libra_divert"] = "Windows"
+        p["version_code"] = "290100"
+        p["version_name"] = "29.1.0"
+        p["cookie_enabled"] = "true"
+        p["screen_width"] = "1536"
+        p["screen_height"] = "864"
+        p["browser_language"] = "zh-CN"
+        p["browser_platform"] = "Win32"
+        p["browser_name"] = "Chrome"
+        p["browser_version"] = "139.0.0.0"
+        p["browser_online"] = "true"
+        p["engine_name"] = "Blink"
+        p["engine_version"] = "139.0.0.0"
+        p["os_name"] = "Windows"
+        p["os_version"] = "10"
+        p["cpu_core_num"] = "16"
+        p["device_memory"] = "8"
+        p["platform"] = "PC"
+        p["downlink"] = "10"
+        p["effective_type"] = "4g"
+        p["round_trip_time"] = "200"
+        p["support_h265"] = "1"
+        p["support_dash"] = "1"
+        p["uifid"] = ""
+        if (msToken.isNotEmpty()) p["msToken"] = msToken
+        p["mix_id"] = mixId
+        p["cursor"] = cursor.toString()
+        p["count"] = "20"
+        return p
     }
 }

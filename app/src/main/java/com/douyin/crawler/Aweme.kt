@@ -10,7 +10,11 @@ data class Aweme(
     val videoUrls: List<String>,
     val coverUrls: List<String>,
     val imageUrls: List<String>,
-    val stats: JSONObject
+    val stats: JSONObject,
+    val mixId: String? = null,
+    val mixName: String? = null,
+    val totalEpisode: Int = 0,
+    val currentEpisode: Int = 0
 ) {
     val type: String
         get() = if (imageUrls.isNotEmpty()) "images" else "video"
@@ -23,4 +27,22 @@ data class Aweme(
 
     val primaryCoverUrl: String?
         get() = coverUrls.firstOrNull()
+
+    val hasMix: Boolean
+        get() = !mixId.isNullOrEmpty()
 }
+
+data class MixInfo(
+    val mixId: String,
+    val mixName: String,
+    val authorName: String,
+    val totalEpisode: Int
+)
+
+data class MixEpisode(
+    val awemeId: String,
+    val desc: String,
+    val coverUrl: String,
+    val videoUrl: String,
+    val episodeIndex: Int
+)
