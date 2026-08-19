@@ -16,9 +16,9 @@
 
 ## 界面预览
 
-| 主界面 | 合集解析 |
+| 主界面 | 设置界面 |
 |--------|----------|
-| ![设置界面](https://github.com/LightChaser32/douyin-downloader-app/releases/download/v1.0.1/_20260819132250_24_1.jpg) | ![主页面](https://github.com/LightChaser32/douyin-downloader-app/releases/download/v1.0.1/_20260819132250_25_1.jpg) |
+| ![主界面](https://github.com/LightChaser32/douyin-downloader-app/releases/download/v1.0.1/main_page.jpg) | ![设置界面](https://github.com/LightChaser32/douyin-downloader-app/releases/download/v1.0.1/settings.jpg) |
 
 ## 安装
 
