@@ -41,18 +41,19 @@ object Downloader {
         url.replace("playwm", "play").replace("&watermark=1", "")
 
     fun download(url: String, target: File, callback: Callback) {
+        downloadWithRetry(url, target, callback, 0)
+    }
+
+    private fun downloadWithRetry(url: String, target: File, callback: Callback, retryCount: Int) {
         executor.execute {
             var connection: HttpURLConnection? = null
             try {
                 val clean = toNoWatermark(url)
                 connection = (URL(clean).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 20000
+                    connectTimeout = 30000
                     readTimeout = 60000
                     requestMethod = "GET"
-                    setRequestProperty(
-                        "User-Agent",
-                        deviceUA
-                    )
+                    setRequestProperty("User-Agent", deviceUA)
                     setRequestProperty("Accept", "*/*")
                     setRequestProperty("Referer", "https://www.douyin.com/")
                     instanceFollowRedirects = true

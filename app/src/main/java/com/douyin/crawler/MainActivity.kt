@@ -81,6 +81,10 @@ class MainActivity : Activity() {
     private var mixListExpanded = false
     private var downloadingMix = false
     private var downloadingMixIndex = 0
+    private var mixDownloadSuccess = 0
+    private var mixDownloadFail = 0
+    private var mixDownloadSkip = 0
+    private val mixDownloadFailedEpisodes = mutableListOf<Int>()
 
     // 合集列表分页
     private var mixPageIndex = 0
@@ -596,20 +600,35 @@ class MainActivity : Activity() {
 
         downloadingMix = true
         downloadingMixIndex = 0
+        mixDownloadSuccess = 0
+        mixDownloadFail = 0
+        mixDownloadSkip = 0
+        mixDownloadFailedEpisodes.clear()
         btnMixDownload.isEnabled = false
         mixProgressWrap.visibility = View.VISIBLE
+        mixProgressBar.max = 100
         mixProgressBar.progress = 0
         mixProgressText.text = getString(R.string.mix_batch_progress, 0, selected.size)
         Downloader.resetCancel()
 
-        downloadMixEpisode(selected, 0)
+        downloadMixEpisode(selected, 0, 0)
     }
 
-    private fun downloadMixEpisode(selected: List<Int>, pos: Int) {
+    private fun downloadMixEpisode(selected: List<Int>, pos: Int, retryCount: Int) {
         if (pos >= selected.size) {
             downloadingMix = false
             btnMixDownload.isEnabled = true
-            mixProgressText.text = getString(R.string.mix_batch_complete, selected.size, 0)
+            mixProgressBar.progress = mixProgressBar.max
+            val msg = if (mixDownloadFailedEpisodes.isEmpty()) {
+                "批量下载完成：${mixDownloadSuccess} 成功"
+            } else {
+                val failedStr = mixDownloadFailedEpisodes.joinToString("、") { "第${it}集" }
+                "批量下载完成：${mixDownloadSuccess} 成功，${mixDownloadFail} 失败（$failedStr）"
+            }
+            mixProgressText.text = msg
+            if (mixDownloadFailedEpisodes.isNotEmpty()) {
+                Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+            }
             return
         }
 
@@ -617,7 +636,8 @@ class MainActivity : Activity() {
         val episode = mixEpisodes[index]
         if (episode.videoUrl.isEmpty()) {
             // 跳过无视频链接的集
-            downloadMixEpisode(selected, pos + 1)
+            mixDownloadSkip++
+            downloadMixEpisode(selected, pos + 1, 0)
             return
         }
 
@@ -634,13 +654,28 @@ class MainActivity : Activity() {
                 io.execute {
                     GallerySaver.save(this@MainActivity, file, true, "${episode.awemeId}.mp4")
                 }
-                downloadMixEpisode(selected, pos + 1)
+                mixDownloadSuccess++
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    downloadMixEpisode(selected, pos + 1, 0)
+                }, 500)
             }
 
             override fun onError(message: String) {
                 android.util.Log.d("DouyinMain", "mix download fail: $message")
-                // 继续下载下一集
-                downloadMixEpisode(selected, pos + 1)
+                if (retryCount < 2) {
+                    // 重试，最多重试2次（共3次尝试）
+                    mixProgressText.text = "第${episode.episodeIndex}集下载失败，重试中...（${retryCount + 1}/2）"
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        downloadMixEpisode(selected, pos, retryCount + 1)
+                    }, 1000)
+                } else {
+                    // 重试用尽，记录失败
+                    mixDownloadFail++
+                    mixDownloadFailedEpisodes.add(episode.episodeIndex)
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        downloadMixEpisode(selected, pos + 1, 0)
+                    }, 500)
+                }
             }
         })
     }
