@@ -113,6 +113,10 @@ DouyinDownloaderApp/
 └── README.md                            # 项目说明
 ```
 
+## 技术参考
+
+- [douyin-downloader](https://github.com/jiji262/douyin-downloader.git)
+
 ## 技术栈
 
 - 原生 Android (Kotlin)
